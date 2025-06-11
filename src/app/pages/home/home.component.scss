@@ -1,0 +1,8 @@
+// Home component specific styles
+// Most styling is handled by Tailwind CSS
+
+// Optional: Add any custom animations or styles here
+.group:hover img {
+  transform: scale(1.05);
+  transition: transform 0.3s ease-in-out;
+}
