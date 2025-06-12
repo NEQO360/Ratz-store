@@ -26,7 +26,7 @@ import { CartService } from '../../services/cart.service';
                 <div>
                   <div class="flex justify-between text-base font-medium text-gray-900">
                     <h3>{{ item.product.name }}</h3>
-                    <p class="ml-4">{{ item.product.price * item.quantity | currency }}</p>
+                    <p class="ml-4">{{ item.product.price * item.quantity | currency:'LKR':'symbol':'1.2-2' }}</p>
                   </div>
                   <p class="mt-1 text-sm text-gray-500">{{ item.product.description }}</p>
                   <p class="mt-1 text-xs text-gray-400">
@@ -63,9 +63,9 @@ import { CartService } from '../../services/cart.service';
         <div class="border-t border-gray-200 py-6 px-4 sm:px-6">
           <div class="flex justify-between text-base font-medium text-gray-900">
             <p>Total</p>
-            <p>{{ cartService.total() | currency }}</p>
+            <p>{{ cartService.total() | currency:'LKR':'symbol':'1.2-2' }}</p>
           </div>
-          <p class="mt-0.5 text-sm text-gray-500">Shipping and taxes calculated at checkout.</p>
+          <p class="mt-0.5 text-sm text-gray-500">Shipping calculated based on location at checkout.</p>
           <div class="mt-6">
             <button class="w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700">
               Checkout

@@ -31,7 +31,7 @@ import { Product } from '../../shared/models/product.model';
                    class="w-full h-64 object-center object-cover group-hover:opacity-75">
             </div>
             <h3 class="mt-4 text-sm text-gray-700">{{ product.name }}</h3>
-            <p class="mt-1 text-lg font-medium text-gray-900">{{ product.price | currency }}</p>
+            <p class="mt-1 text-lg font-medium text-gray-900">{{ product.price | currency:'LKR':'symbol':'1.2-2' }}</p>
             <p class="mt-1 text-sm text-gray-500 line-clamp-2">{{ product.description }}</p>
             <button (click)="addToCart(product)"
                     class="mt-4 w-full bg-indigo-600 border border-transparent rounded-md py-2 px-4 flex items-center justify-center text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
@@ -82,7 +82,7 @@ export class ProductsComponent implements OnInit {
     return Array.from({ length: 12 }, (_, i) => ({
       id: `prod-${i + 1}`,
       name: `Product ${i + 1}`,
-      price: Math.floor(Math.random() * 100) + 10,
+      price: Math.floor(Math.random() * 10000) + 1000,
       description: `High quality product with excellent features. Perfect for your needs.`,
       images: [`https://via.placeholder.com/300x300?text=Product+${i + 1}`],
       inventory: Math.floor(Math.random() * 50) + 10,

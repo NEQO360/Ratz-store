@@ -76,7 +76,7 @@ import { RouterLink } from '@angular/router';
         
         <div class="mt-8 border-t border-gray-700 pt-8">
           <p class="text-base text-gray-400 text-center">
-            &copy; 2025 Ratz Store. All rights reserved.
+            &copy; 2025 Ratz Store Sri Lanka. All rights reserved.
           </p>
         </div>
       </div>

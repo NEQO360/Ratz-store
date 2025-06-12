@@ -42,7 +42,7 @@ export class HomeComponent implements OnInit {
       {
         id: 'feat-1',
         name: 'Premium Wireless Headphones',
-        price: 79.99,
+        price: 8999,
         description: 'High-quality wireless headphones with noise cancellation',
         images: ['https://via.placeholder.com/400x400?text=Headphones'],
         inventory: 25,
@@ -51,7 +51,7 @@ export class HomeComponent implements OnInit {
       {
         id: 'feat-2',
         name: 'Smart Watch Pro',
-        price: 199.99,
+        price: 24999,
         description: 'Advanced fitness tracking and smartphone integration',
         images: ['https://via.placeholder.com/400x400?text=Smart+Watch'],
         inventory: 15,
@@ -60,7 +60,7 @@ export class HomeComponent implements OnInit {
       {
         id: 'feat-3',
         name: 'Portable Speaker',
-        price: 49.99,
+        price: 5999,
         description: 'Waterproof Bluetooth speaker with 12-hour battery life',
         images: ['https://via.placeholder.com/400x400?text=Speaker'],
         inventory: 30,
@@ -69,7 +69,7 @@ export class HomeComponent implements OnInit {
       {
         id: 'feat-4',
         name: 'Laptop Stand',
-        price: 34.99,
+        price: 3999,
         description: 'Ergonomic aluminum laptop stand for better posture',
         images: ['https://via.placeholder.com/400x400?text=Laptop+Stand'],
         inventory: 40,
