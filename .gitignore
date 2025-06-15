@@ -1,5 +1,6 @@
-# See https://docs.github.com/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# See http://help.github.com/ignore-files/ for more about ignoring files.
 
+# ===== FRONTEND (Angular) =====
 # Compiled output
 /dist
 /tmp
@@ -40,3 +41,36 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# ===== BACKEND (Express) =====
+# Backend node modules
+backend/node_modules/
+backend/npm-debug.log*
+backend/yarn-debug.log*
+backend/yarn-error.log*
+
+# Backend environment variables
+backend/.env
+backend/.env.local
+backend/.env.development.local
+backend/.env.test.local
+backend/.env.production.local
+
+# Backend logs
+backend/logs/
+backend/*.log
+
+# Backend testing
+backend/coverage/
+backend/.nyc_output/
+
+# Backend uploads (if storing locally)
+backend/uploads/
+backend/public/uploads/
+
+# Backend misc
+backend/.cache/
+backend/.temp/
+backend/*.pid
+backend/*.seed
+backend/*.pid.lock
