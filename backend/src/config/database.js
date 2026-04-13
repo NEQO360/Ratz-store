@@ -1,38 +1,38 @@
-// src/config/database.js
 const mongoose = require('mongoose');
 
+let cached = global._mongooseConnection;
+if (!cached) {
+  cached = global._mongooseConnection = { conn: null, promise: null };
+}
+
 const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI, {
-      // These options are no longer needed in Mongoose 6+
-      // But included for compatibility
+  if (cached.conn) return cached.conn;
+
+  if (!cached.promise) {
+    if (!process.env.MONGODB_URI) {
+      console.error('MONGODB_URI environment variable is not set');
+      if (require.main === module) process.exit(1);
+      return;
+    }
+
+    cached.promise = mongoose.connect(process.env.MONGODB_URI, {
+      bufferCommands: true,
+    }).then((conn) => {
+      console.log(`MongoDB Connected: ${conn.connection.host}`);
+      return conn;
     });
-
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
-    
-    // Log database name
-    console.log(`📁 Database: ${conn.connection.name}`);
-
-    // Handle connection events
-    mongoose.connection.on('error', (err) => {
-      console.error('❌ MongoDB connection error:', err);
-    });
-
-    mongoose.connection.on('disconnected', () => {
-      console.warn('⚠️  MongoDB disconnected');
-    });
-
-    // Graceful shutdown
-    process.on('SIGINT', async () => {
-      await mongoose.connection.close();
-      console.log('📴 MongoDB connection closed through app termination');
-      process.exit(0);
-    });
-
-  } catch (error) {
-    console.error('❌ MongoDB connection failed:', error.message);
-    process.exit(1);
   }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (error) {
+    cached.promise = null;
+    console.error('MongoDB connection failed:', error.message);
+    if (require.main === module) process.exit(1);
+    throw error;
+  }
+
+  return cached.conn;
 };
 
 module.exports = connectDB;
