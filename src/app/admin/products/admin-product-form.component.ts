@@ -118,6 +118,21 @@ import { ProductService } from '../../services/product.service';
           </div>
         </div>
 
+        <!-- Featured -->
+        <div>
+          <div class="flex items-center gap-3">
+            <input type="checkbox" 
+                   id="featured"
+                   name="featured"
+                   [(ngModel)]="product.featured"
+                   class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+            <label for="featured" class="text-sm font-medium text-gray-700">
+              Featured Product
+            </label>
+          </div>
+          <p class="mt-1 text-xs text-gray-500 ml-7">Featured products appear on the home page</p>
+        </div>
+
         <!-- Images -->
         <div>
           <h3 class="text-lg font-medium text-gray-900 mb-4">Product Images</h3>
@@ -191,7 +206,7 @@ export class AdminProductFormComponent implements OnInit {
     countryOfOrigin: ''
   };
 
-  availableCategories = ['electronics', 'audio', 'wearables', 'accessories', 'office', 'gadgets'];
+  availableCategories = ['electronics', 'audio', 'wearables', 'accessories', 'office', 'gadgets', 'food', 'chocolates', 'supplements'];
   countries = [
     'Sri Lanka', 'China', 'India', 'Japan', 'South Korea', 'Taiwan',
     'United States', 'United Kingdom', 'Germany', 'France', 'Italy',
@@ -260,7 +275,8 @@ export class AdminProductFormComponent implements OnInit {
         inventory: this.product.inventory,
         categories: this.product.categories,
         images: this.product.images.filter(img => img.trim() !== ''),
-        countryOfOrigin: this.product.countryOfOrigin || ''
+        countryOfOrigin: this.product.countryOfOrigin || '',
+        featured: this.product.featured || false
       };
 
       const request$ = this.isEditMode && this.productId
