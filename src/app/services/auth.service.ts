@@ -69,7 +69,16 @@ export class AuthService {
         this.currentUser.set(response.user);
       }),
       catchError(error => {
-        const message = error.error?.error || 'Invalid credentials';
+        let message = 'Invalid credentials';
+        if (typeof error.error === 'string') {
+          message = error.error;
+        } else if (typeof error.error?.error === 'string') {
+          message = error.error.error;
+        } else if (typeof error.error?.message === 'string') {
+          message = error.error.message;
+        } else if (error.status === 0) {
+          message = 'Unable to reach server. Please try again.';
+        }
         return throwError(() => new Error(message));
       })
     );
