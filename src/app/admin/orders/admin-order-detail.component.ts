@@ -45,7 +45,7 @@ import { ToastService } from '../../services/toast.service';
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
             <h1 class="text-2xl font-bold text-gray-900">Order #{{ order.orderNumber }}</h1>
-            <p class="text-sm text-gray-500 mt-1">Placed on {{ order.createdAt | date:'MMMM d, y \'at\' h:mm a' }}</p>
+            <p class="text-sm text-gray-500 mt-1">Placed on {{ order.createdAt | date:'MMMM d, y, h:mm a' }}</p>
           </div>
           <div class="flex items-center gap-3">
             <select [(ngModel)]="order.status"
@@ -81,7 +81,7 @@ import { ToastService } from '../../services/toast.service';
                 <div *ngFor="let item of order.items" class="flex items-center gap-4 px-6 py-4">
                   <div class="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                     <img *ngIf="item.product?.images?.length" 
-                         [src]="item.product.images[0]" 
+                         [src]="item.product!.images![0]" 
                          [alt]="item.name"
                          class="w-full h-full object-cover">
                     <div *ngIf="!item.product?.images?.length" class="w-full h-full flex items-center justify-center">
