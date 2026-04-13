@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Meta, Title } from '@angular/platform-browser';
 import { CartService } from '../../services/cart.service';
 import { ProductService } from '../../services/product.service';
@@ -10,7 +11,7 @@ import { Product } from '../../shared/models/product.model';
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="bg-gray-50 min-h-screen">
       <div class="max-w-7xl mx-auto py-12 px-4 sm:py-16 sm:px-6 lg:px-8">
@@ -49,11 +50,10 @@ import { Product } from '../../shared/models/product.model';
         <div *ngIf="!loading && products.length > 0" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           <div *ngFor="let product of products" 
                class="group bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg hover:border-indigo-100 transition-all duration-300">
-            <div class="relative overflow-hidden bg-gray-100 aspect-square">
+            <a [routerLink]="['/product', product._id || product.id]" class="block relative overflow-hidden bg-gray-100 aspect-square cursor-pointer">
               <img [src]="product.images[0]" 
                    [alt]="product.name"
                    class="w-full h-full object-center object-cover group-hover:scale-105 transition-transform duration-500">
-              <!-- Stock Badge -->
               <div class="absolute top-3 left-3 flex flex-col gap-2">
                 <span *ngIf="product.inventory && product.inventory <= 5 && product.inventory > 0" 
                       class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500 text-white shadow-sm">
@@ -68,9 +68,11 @@ import { Product } from '../../shared/models/product.model';
                   Featured
                 </span>
               </div>
-            </div>
+            </a>
             <div class="p-4">
-              <h3 class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors line-clamp-1">{{ product.name }}</h3>
+              <a [routerLink]="['/product', product._id || product.id]" class="block">
+                <h3 class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors line-clamp-1">{{ product.name }}</h3>
+              </a>
               <p class="mt-1 text-sm text-gray-500 line-clamp-2 min-h-[2.5rem]">{{ product.description }}</p>
               <div class="mt-3 flex items-center justify-between">
                 <p class="text-lg font-bold text-gray-900">{{ product.price | currency:'LKR':'symbol':'1.0-0' }}</p>

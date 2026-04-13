@@ -31,6 +31,11 @@ const productSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   }],
+  countryOfOrigin: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   featured: {
     type: Boolean,
     default: false

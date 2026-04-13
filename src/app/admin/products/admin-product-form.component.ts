@@ -85,6 +85,19 @@ import { ProductService } from '../../services/product.service';
                      required
                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border">
             </div>
+
+            <div>
+              <label for="countryOfOrigin" class="block text-sm font-medium text-gray-700">
+                Country of Origin
+              </label>
+              <select id="countryOfOrigin"
+                      name="countryOfOrigin"
+                      [(ngModel)]="product.countryOfOrigin"
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border">
+                <option value="">Select a country</option>
+                <option *ngFor="let country of countries" [value]="country">{{ country }}</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -174,10 +187,17 @@ export class AdminProductFormComponent implements OnInit {
     description: '',
     images: [''],
     inventory: 0,
-    categories: []
+    categories: [],
+    countryOfOrigin: ''
   };
 
   availableCategories = ['electronics', 'audio', 'wearables', 'accessories', 'office', 'gadgets'];
+  countries = [
+    'Sri Lanka', 'China', 'India', 'Japan', 'South Korea', 'Taiwan',
+    'United States', 'United Kingdom', 'Germany', 'France', 'Italy',
+    'Vietnam', 'Thailand', 'Malaysia', 'Indonesia', 'Bangladesh',
+    'Australia', 'Canada', 'Singapore', 'Hong Kong', 'Netherlands'
+  ];
 
   constructor(
     private router: Router,
@@ -239,7 +259,8 @@ export class AdminProductFormComponent implements OnInit {
         price: this.product.price,
         inventory: this.product.inventory,
         categories: this.product.categories,
-        images: this.product.images.filter(img => img.trim() !== '')
+        images: this.product.images.filter(img => img.trim() !== ''),
+        countryOfOrigin: this.product.countryOfOrigin || ''
       };
 
       const request$ = this.isEditMode && this.productId

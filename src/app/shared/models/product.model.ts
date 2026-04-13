@@ -7,6 +7,7 @@ export interface Product {
   images: string[];
   inventory: number;
   categories: string[];
+  countryOfOrigin?: string;
   featured?: boolean;
   active?: boolean;
   createdAt?: Date;
