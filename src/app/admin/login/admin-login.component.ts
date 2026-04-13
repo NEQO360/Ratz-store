@@ -101,10 +101,8 @@ export class AdminLoginComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    // Get return url from route parameters or default to dashboard
     this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/admin/dashboard';
     
-    // If already logged in, redirect
     if (this.authService.isAuthenticated()) {
       this.router.navigate([this.returnUrl]);
     }
@@ -114,20 +112,14 @@ export class AdminLoginComponent implements OnInit {
     this.error = '';
     this.isLoading = true;
 
-    // For demo, accept these credentials
-    if (this.credentials.email === 'admin@ratzstore.lk' && this.credentials.password === 'admin123') {
-      this.authService.login(this.credentials).subscribe({
-        next: () => {
-          this.router.navigate([this.returnUrl]);
-        },
-        error: (err) => {
-          this.error = 'Invalid email or password';
-          this.isLoading = false;
-        }
-      });
-    } else {
-      this.error = 'Invalid email or password';
-      this.isLoading = false;
-    }
+    this.authService.login(this.credentials).subscribe({
+      next: () => {
+        this.router.navigate([this.returnUrl]);
+      },
+      error: (err) => {
+        this.error = err.message || 'Invalid email or password';
+        this.isLoading = false;
+      }
+    });
   }
 }

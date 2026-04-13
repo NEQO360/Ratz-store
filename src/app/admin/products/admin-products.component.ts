@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Product } from './../../shared/models/product.model';
+import { ProductService } from '../../services/product.service';
 
 @Component({
   selector: 'app-admin-products',
@@ -46,8 +47,13 @@ import { Product } from './../../shared/models/product.model';
         </div>
       </div>
 
+      <!-- Loading -->
+      <div *ngIf="loading" class="text-center py-12">
+        <p class="text-gray-500">Loading products...</p>
+      </div>
+
       <!-- Products Table -->
-      <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+      <div *ngIf="!loading" class="bg-white shadow overflow-hidden sm:rounded-lg">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
@@ -99,7 +105,7 @@ import { Product } from './../../shared/models/product.model';
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <a [routerLink]="['/admin/products/edit', product.id]" 
+                <a [routerLink]="['/admin/products/edit', product._id || product.id]" 
                    class="text-indigo-600 hover:text-indigo-900 mr-4">Edit</a>
                 <button (click)="deleteProduct(product)" 
                         class="text-red-600 hover:text-red-900">Delete</button>
@@ -134,43 +140,27 @@ export class AdminProductsComponent implements OnInit {
   filteredProducts: Product[] = [];
   searchQuery = '';
   filterCategory = '';
+  loading = true;
+
+  constructor(private productService: ProductService) {}
 
   ngOnInit() {
     this.loadProducts();
   }
 
   loadProducts() {
-    // Mock data - replace with API call
-    this.products = [
-      {
-        id: '1',
-        name: 'Premium Wireless Headphones',
-        price: 8999,
-        description: 'High-quality wireless headphones with noise cancellation',
-        images: ['https://via.placeholder.com/400x400?text=Headphones'],
-        inventory: 25,
-        categories: ['electronics', 'audio']
+    this.loading = true;
+    this.productService.getAdminProducts().subscribe({
+      next: (products) => {
+        this.products = products;
+        this.filteredProducts = [...products];
+        this.loading = false;
       },
-      {
-        id: '2',
-        name: 'Smart Watch Pro',
-        price: 24999,
-        description: 'Advanced fitness tracking and smartphone integration',
-        images: ['https://via.placeholder.com/400x400?text=Smart+Watch'],
-        inventory: 8,
-        categories: ['electronics', 'wearables']
-      },
-      {
-        id: '3',
-        name: 'Portable Speaker',
-        price: 5999,
-        description: 'Waterproof Bluetooth speaker with 12-hour battery life',
-        images: ['https://via.placeholder.com/400x400?text=Speaker'],
-        inventory: 0,
-        categories: ['electronics', 'audio']
+      error: (err) => {
+        console.error('Error loading products:', err);
+        this.loading = false;
       }
-    ];
-    this.filteredProducts = [...this.products];
+    });
   }
 
   filterProducts() {
@@ -194,10 +184,14 @@ export class AdminProductsComponent implements OnInit {
 
   deleteProduct(product: Product) {
     if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
-      // In real app, make API call to delete
-      console.log('Deleting product:', product.id);
-      this.products = this.products.filter(p => p.id !== product.id);
-      this.filterProducts();
+      const id = product._id || product.id;
+      this.productService.deleteProduct(id).subscribe({
+        next: () => {
+          this.products = this.products.filter(p => (p._id || p.id) !== id);
+          this.filterProducts();
+        },
+        error: (err) => console.error('Error deleting product:', err)
+      });
     }
   }
 }

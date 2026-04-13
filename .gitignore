@@ -42,6 +42,9 @@ testem.log
 .DS_Store
 Thumbs.db
 
+# Vercel
+.vercel/
+
 # ===== BACKEND (Express) =====
 # Backend node modules
 backend/node_modules/
@@ -64,9 +67,9 @@ backend/*.log
 backend/coverage/
 backend/.nyc_output/
 
-# Backend uploads (if storing locally)
+# Backend uploads and Angular production build
 backend/uploads/
-backend/public/uploads/
+backend/public/
 
 # Backend misc
 backend/.cache/

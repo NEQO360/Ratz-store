@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Product } from './../../shared/models/product.model';
+import { ProductService } from '../../services/product.service';
 
 @Component({
   selector: 'app-admin-product-form',
@@ -19,7 +20,12 @@ import { Product } from './../../shared/models/product.model';
         </p>
       </div>
 
-      <form (ngSubmit)="onSubmit()" class="space-y-8 bg-white shadow rounded-lg p-6">
+      <!-- Loading -->
+      <div *ngIf="loadingProduct" class="text-center py-12">
+        <p class="text-gray-500">Loading product...</p>
+      </div>
+
+      <form *ngIf="!loadingProduct" (ngSubmit)="onSubmit()" class="space-y-8 bg-white shadow rounded-lg p-6">
         <!-- Basic Information -->
         <div>
           <h3 class="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
@@ -125,6 +131,11 @@ import { Product } from './../../shared/models/product.model';
           </div>
         </div>
 
+        <!-- Error Message -->
+        <div *ngIf="errorMessage" class="rounded-md bg-red-50 p-4">
+          <p class="text-sm text-red-800">{{ errorMessage }}</p>
+        </div>
+
         <!-- Form Actions -->
         <div class="flex justify-end space-x-4 pt-6 border-t">
           <button type="button" 
@@ -152,6 +163,8 @@ import { Product } from './../../shared/models/product.model';
 export class AdminProductFormComponent implements OnInit {
   isEditMode = false;
   isSubmitting = false;
+  loadingProduct = false;
+  errorMessage = '';
   productId?: string;
   
   product: Product = {
@@ -168,7 +181,8 @@ export class AdminProductFormComponent implements OnInit {
 
   constructor(
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private productService: ProductService
   ) {}
 
   ngOnInit() {
@@ -180,19 +194,19 @@ export class AdminProductFormComponent implements OnInit {
   }
 
   loadProduct() {
-    // In real app, fetch from API
-    // Simulated data for demo
-    if (this.productId === '1') {
-      this.product = {
-        id: '1',
-        name: 'Premium Wireless Headphones',
-        price: 8999,
-        description: 'High-quality wireless headphones with noise cancellation',
-        images: ['https://via.placeholder.com/400x400?text=Headphones'],
-        inventory: 25,
-        categories: ['electronics', 'audio']
-      };
-    }
+    if (!this.productId) return;
+    this.loadingProduct = true;
+    this.productService.getProduct(this.productId).subscribe({
+      next: (product) => {
+        this.product = product;
+        this.loadingProduct = false;
+      },
+      error: (err) => {
+        console.error('Error loading product:', err);
+        this.errorMessage = 'Failed to load product';
+        this.loadingProduct = false;
+      }
+    });
   }
 
   toggleCategory(category: string) {
@@ -217,19 +231,30 @@ export class AdminProductFormComponent implements OnInit {
   onSubmit() {
     if (this.isFormValid()) {
       this.isSubmitting = true;
-      
-      // Simulate API call
-      setTimeout(() => {
-        if (this.isEditMode) {
-          console.log('Updating product:', this.product);
-          // API call: this.productService.update(this.productId, this.product)
-        } else {
-          console.log('Creating product:', this.product);
-          // API call: this.productService.create(this.product)
+      this.errorMessage = '';
+
+      const payload = {
+        name: this.product.name,
+        description: this.product.description,
+        price: this.product.price,
+        inventory: this.product.inventory,
+        categories: this.product.categories,
+        images: this.product.images.filter(img => img.trim() !== '')
+      };
+
+      const request$ = this.isEditMode && this.productId
+        ? this.productService.updateProduct(this.productId, payload)
+        : this.productService.createProduct(payload);
+
+      request$.subscribe({
+        next: () => {
+          this.router.navigate(['/admin/products']);
+        },
+        error: (err) => {
+          this.errorMessage = err.error?.error || 'Failed to save product';
+          this.isSubmitting = false;
         }
-        
-        this.router.navigate(['/admin/products']);
-      }, 1500);
+      });
     }
   }
 

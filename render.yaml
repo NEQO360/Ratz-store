@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: ratz-store
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: |
+      cd backend && npm install &&
+      cd .. && npm install && npm run build &&
+      cp -r dist/ratz-store/browser backend/public
+    startCommand: cd backend && node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRE
+        value: 30d
+      - key: MONGODB_URI
+        sync: false
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: ratz-store
+          property: host

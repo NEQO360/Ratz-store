@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
 import { CartService } from '../../services/cart.service';
+import { ProductService } from '../../services/product.service';
+import { ToastService } from '../../services/toast.service';
 import { Product } from '../../shared/models/product.model';
 
 @Component({
@@ -10,34 +12,96 @@ import { Product } from '../../shared/models/product.model';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="bg-white">
-      <div class="max-w-2xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:max-w-7xl lg:px-8">
-        <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl mb-8">Products</h1>
-        
-        <!-- Search Bar -->
+    <div class="bg-gray-50 min-h-screen">
+      <div class="max-w-7xl mx-auto py-12 px-4 sm:py-16 sm:px-6 lg:px-8">
+        <!-- Page Header -->
         <div class="mb-8">
-          <input type="text" 
-                 [(ngModel)]="searchQuery"
-                 (ngModelChange)="filterProducts()"
-                 placeholder="Search products..."
-                 class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+          <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">Products</h1>
+          <p class="mt-2 text-gray-500">Browse our full collection of quality products</p>
         </div>
 
-        <div class="grid grid-cols-1 gap-y-10 sm:grid-cols-2 gap-x-6 lg:grid-cols-3 xl:grid-cols-4 xl:gap-x-8">
-          <div *ngFor="let product of filteredProducts" class="group">
-            <div class="w-full aspect-w-1 aspect-h-1 bg-gray-200 rounded-lg overflow-hidden xl:aspect-w-7 xl:aspect-h-8">
+        <!-- Search & Filter Bar -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-8">
+          <div class="relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input type="text" 
+                   [(ngModel)]="searchQuery"
+                   (ngModelChange)="onSearch()"
+                   placeholder="Search products..."
+                   class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm">
+          </div>
+        </div>
+
+        <!-- Loading State -->
+        <div *ngIf="loading" class="text-center py-20">
+          <div class="inline-flex items-center gap-2 text-gray-500">
+            <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Loading products...
+          </div>
+        </div>
+
+        <!-- Product Grid -->
+        <div *ngIf="!loading && products.length > 0" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div *ngFor="let product of products" 
+               class="group bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-lg hover:border-indigo-100 transition-all duration-300">
+            <div class="relative overflow-hidden bg-gray-100 aspect-square">
               <img [src]="product.images[0]" 
                    [alt]="product.name"
-                   class="w-full h-64 object-center object-cover group-hover:opacity-75">
+                   class="w-full h-full object-center object-cover group-hover:scale-105 transition-transform duration-500">
+              <!-- Stock Badge -->
+              <div class="absolute top-3 left-3 flex flex-col gap-2">
+                <span *ngIf="product.inventory && product.inventory <= 5 && product.inventory > 0" 
+                      class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500 text-white shadow-sm">
+                  Only {{ product.inventory }} left!
+                </span>
+                <span *ngIf="product.inventory === 0" 
+                      class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-500 text-white shadow-sm">
+                  Out of Stock
+                </span>
+                <span *ngIf="product.featured" 
+                      class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-sm">
+                  Featured
+                </span>
+              </div>
             </div>
-            <h3 class="mt-4 text-sm text-gray-700">{{ product.name }}</h3>
-            <p class="mt-1 text-lg font-medium text-gray-900">{{ product.price | currency:'LKR':'symbol':'1.2-2' }}</p>
-            <p class="mt-1 text-sm text-gray-500 line-clamp-2">{{ product.description }}</p>
-            <button (click)="addToCart(product)"
-                    class="mt-4 w-full bg-indigo-600 border border-transparent rounded-md py-2 px-4 flex items-center justify-center text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-              Add to Cart
-            </button>
+            <div class="p-4">
+              <h3 class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors line-clamp-1">{{ product.name }}</h3>
+              <p class="mt-1 text-sm text-gray-500 line-clamp-2 min-h-[2.5rem]">{{ product.description }}</p>
+              <div class="mt-3 flex items-center justify-between">
+                <p class="text-lg font-bold text-gray-900">{{ product.price | currency:'LKR':'symbol':'1.0-0' }}</p>
+                <button (click)="addToCart(product)"
+                        [disabled]="product.inventory === 0 || addedProducts[product.id || product._id || '']"
+                        class="inline-flex items-center gap-1.5 text-sm font-medium rounded-lg px-3 py-2 transition-all shadow-sm active:scale-95 disabled:cursor-not-allowed"
+                        [ngClass]="addedProducts[product.id || product._id || ''] 
+                          ? 'bg-green-500 text-white' 
+                          : product.inventory === 0 
+                            ? 'bg-gray-200 text-gray-400' 
+                            : 'bg-indigo-600 text-white hover:bg-indigo-700'">
+                  <svg *ngIf="!addedProducts[product.id || product._id || '']" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                  </svg>
+                  <svg *ngIf="addedProducts[product.id || product._id || '']" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  {{ addedProducts[product.id || product._id || ''] ? 'Added!' : product.inventory === 0 ? 'Sold Out' : 'Add' }}
+                </button>
+              </div>
+            </div>
           </div>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="!loading && products.length === 0" class="text-center py-20">
+          <svg class="mx-auto h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <h3 class="mt-4 text-lg font-medium text-gray-900">No products found</h3>
+          <p class="mt-2 text-gray-500">Try a different search term.</p>
         </div>
       </div>
     </div>
@@ -45,11 +109,14 @@ import { Product } from '../../shared/models/product.model';
 })
 export class ProductsComponent implements OnInit {
   products: Product[] = [];
-  filteredProducts: Product[] = [];
   searchQuery = '';
+  loading = true;
+  addedProducts: { [key: string]: boolean } = {};
 
   constructor(
     private cartService: CartService,
+    private productService: ProductService,
+    private toastService: ToastService,
     private meta: Meta,
     private title: Title
   ) {
@@ -61,32 +128,35 @@ export class ProductsComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.products = this.generateMockProducts();
-    this.filteredProducts = [...this.products];
+    this.loadProducts();
   }
 
-  filterProducts() {
-    const query = this.searchQuery.toLowerCase();
-    this.filteredProducts = this.products.filter(product =>
-      product.name.toLowerCase().includes(query) ||
-      product.description.toLowerCase().includes(query) ||
-      product.categories.some(cat => cat.toLowerCase().includes(query))
-    );
+  loadProducts() {
+    this.loading = true;
+    this.productService.getProducts({ search: this.searchQuery || undefined }).subscribe({
+      next: (res) => {
+        this.products = res.data;
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error loading products:', err);
+        this.loading = false;
+      }
+    });
+  }
+
+  onSearch() {
+    this.loadProducts();
   }
 
   addToCart(product: Product) {
+    const pid = product.id || product._id || '';
     this.cartService.addToCart(product, 1);
-  }
+    this.toastService.success(`${product.name} added to cart!`);
 
-  private generateMockProducts(): Product[] {
-    return Array.from({ length: 12 }, (_, i) => ({
-      id: `prod-${i + 1}`,
-      name: `Product ${i + 1}`,
-      price: Math.floor(Math.random() * 10000) + 1000,
-      description: `High quality product with excellent features. Perfect for your needs.`,
-      images: [`https://via.placeholder.com/300x300?text=Product+${i + 1}`],
-      inventory: Math.floor(Math.random() * 50) + 10,
-      categories: ['electronics', 'gadgets']
-    }));
+    this.addedProducts[pid] = true;
+    setTimeout(() => {
+      this.addedProducts[pid] = false;
+    }, 1500);
   }
 }

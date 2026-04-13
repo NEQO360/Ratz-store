@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Meta, Title } from '@angular/platform-browser';
 import { CartService } from '../../services/cart.service';
+import { ProductService } from '../../services/product.service';
+import { ToastService } from '../../services/toast.service';
 import { Product } from '../../shared/models/product.model';
 
 @Component({
@@ -17,6 +19,8 @@ export class HomeComponent implements OnInit {
 
   constructor(
     private cartService: CartService,
+    private productService: ProductService,
+    private toastService: ToastService,
     private meta: Meta,
     private title: Title
   ) {
@@ -28,53 +32,14 @@ export class HomeComponent implements OnInit {
   }
 
   ngOnInit() {
-    // Mock featured products - in real app, this would come from a service
-    this.featuredProducts = this.generateFeaturedProducts();
+    this.productService.getFeaturedProducts().subscribe({
+      next: (products) => this.featuredProducts = products,
+      error: (err) => console.error('Error loading featured products:', err)
+    });
   }
 
   addToCart(product: Product) {
     this.cartService.addToCart(product);
-    // You could add a toast notification here
-  }
-
-  private generateFeaturedProducts(): Product[] {
-    return [
-      {
-        id: 'feat-1',
-        name: 'Premium Wireless Headphones',
-        price: 8999,
-        description: 'High-quality wireless headphones with noise cancellation',
-        images: ['https://via.placeholder.com/400x400?text=Headphones'],
-        inventory: 25,
-        categories: ['electronics', 'audio']
-      },
-      {
-        id: 'feat-2',
-        name: 'Smart Watch Pro',
-        price: 24999,
-        description: 'Advanced fitness tracking and smartphone integration',
-        images: ['https://via.placeholder.com/400x400?text=Smart+Watch'],
-        inventory: 15,
-        categories: ['electronics', 'wearables']
-      },
-      {
-        id: 'feat-3',
-        name: 'Portable Speaker',
-        price: 5999,
-        description: 'Waterproof Bluetooth speaker with 12-hour battery life',
-        images: ['https://via.placeholder.com/400x400?text=Speaker'],
-        inventory: 30,
-        categories: ['electronics', 'audio']
-      },
-      {
-        id: 'feat-4',
-        name: 'Laptop Stand',
-        price: 3999,
-        description: 'Ergonomic aluminum laptop stand for better posture',
-        images: ['https://via.placeholder.com/400x400?text=Laptop+Stand'],
-        inventory: 40,
-        categories: ['accessories', 'office']
-      }
-    ];
+    this.toastService.success(`${product.name} added to cart!`);
   }
 }

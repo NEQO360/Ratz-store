@@ -1,16 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-interface Message {
-  _id: string;
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-  status: 'unread' | 'read' | 'replied';
-  createdAt: Date;
-}
+import { ContactService, ContactMessage } from '../../services/contact.service';
 
 @Component({
   selector: 'app-admin-messages',
@@ -31,7 +22,7 @@ interface Message {
                 [class.bg-white]="currentFilter !== 'all'"
                 [class.text-gray-700]="currentFilter !== 'all'"
                 class="px-4 py-2 rounded-md text-sm font-medium border border-gray-300">
-          All ({{ getTotalCount() }})
+          All ({{ counts.total }})
         </button>
         <button (click)="setFilter('unread')"
                 [class.bg-gray-900]="currentFilter === 'unread'"
@@ -39,7 +30,7 @@ interface Message {
                 [class.bg-white]="currentFilter !== 'unread'"
                 [class.text-gray-700]="currentFilter !== 'unread'"
                 class="px-4 py-2 rounded-md text-sm font-medium border border-gray-300">
-          Unread ({{ getUnreadCount() }})
+          Unread ({{ counts.unread }})
         </button>
         <button (click)="setFilter('read')"
                 [class.bg-gray-900]="currentFilter === 'read'"
@@ -47,7 +38,7 @@ interface Message {
                 [class.bg-white]="currentFilter !== 'read'"
                 [class.text-gray-700]="currentFilter !== 'read'"
                 class="px-4 py-2 rounded-md text-sm font-medium border border-gray-300">
-          Read ({{ getReadCount() }})
+          Read ({{ counts.read }})
         </button>
         <button (click)="setFilter('replied')"
                 [class.bg-gray-900]="currentFilter === 'replied'"
@@ -55,13 +46,18 @@ interface Message {
                 [class.bg-white]="currentFilter !== 'replied'"
                 [class.text-gray-700]="currentFilter !== 'replied'"
                 class="px-4 py-2 rounded-md text-sm font-medium border border-gray-300">
-          Replied ({{ getRepliedCount() }})
+          Replied ({{ counts.replied }})
         </button>
       </div>
 
+      <!-- Loading -->
+      <div *ngIf="loading" class="text-center py-12">
+        <p class="text-gray-500">Loading messages...</p>
+      </div>
+
       <!-- Messages List -->
-      <div class="space-y-4">
-        <div *ngFor="let message of filteredMessages" 
+      <div *ngIf="!loading" class="space-y-4">
+        <div *ngFor="let message of messages" 
              class="bg-white shadow rounded-lg p-6 cursor-pointer hover:shadow-lg transition-shadow"
              (click)="toggleMessage(message)">
           <div class="flex items-start justify-between">
@@ -78,9 +74,9 @@ interface Message {
               </div>
               <div class="mt-1 flex items-center space-x-4 text-sm text-gray-500">
                 <span>{{ message.name }}</span>
-                <span>•</span>
+                <span>&#8226;</span>
                 <span>{{ message.email }}</span>
-                <span>•</span>
+                <span>&#8226;</span>
                 <span>{{ message.createdAt | date:'MMM d, y h:mm a' }}</span>
               </div>
               <p class="mt-2 text-gray-600">{{ message.message }}</p>
@@ -107,16 +103,29 @@ interface Message {
           <div *ngIf="expandedMessages.has(message._id)" class="mt-4 pt-4 border-t border-gray-200">
             <div class="space-y-4">
               <div>
-                <h4 class="text-sm font-medium text-gray-900">Reply to this message:</h4>
+                <h4 class="text-sm font-medium text-gray-900">Reply to {{ message.name }} ({{ message.email }}):</h4>
+                <p class="mt-1 text-xs text-gray-500">This will send an email to the customer with your reply.</p>
                 <div class="mt-2">
                   <textarea [(ngModel)]="replyText"
                             rows="4"
                             placeholder="Type your reply here..."
                             class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border"></textarea>
-                  <div class="mt-2 flex justify-end">
+                  <div class="mt-2 flex items-center justify-between">
+                    <span *ngIf="replySending" class="text-sm text-gray-500 flex items-center gap-1">
+                      <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Sending...
+                    </span>
+                    <span *ngIf="!replySending"></span>
                     <button (click)="sendReply(message)"
-                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
-                      Send Reply
+                            [disabled]="replySending || !replyText.trim()"
+                            class="inline-flex items-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                      </svg>
+                      Send Reply via Email
                     </button>
                   </div>
                 </div>
@@ -127,7 +136,7 @@ interface Message {
       </div>
 
       <!-- Empty State -->
-      <div *ngIf="filteredMessages.length === 0" class="text-center py-12 bg-white rounded-lg">
+      <div *ngIf="!loading && messages.length === 0" class="text-center py-12 bg-white rounded-lg">
         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
         </svg>
@@ -140,126 +149,99 @@ interface Message {
   `
 })
 export class AdminMessagesComponent implements OnInit {
-  messages: Message[] = [];
-  filteredMessages: Message[] = [];
-  currentFilter: 'all' | 'unread' | 'read' | 'replied' = 'all';
+  messages: ContactMessage[] = [];
+  loading = true;
+  currentFilter: string = 'all';
   expandedMessages = new Set<string>();
   replyText = '';
+  replySending = false;
+  counts = { total: 0, unread: 0, read: 0, replied: 0 };
+
+  constructor(private contactService: ContactService) {}
 
   ngOnInit() {
     this.loadMessages();
   }
 
   loadMessages() {
-    // Mock data - replace with API call
-    this.messages = [
-      {
-        _id: '1',
-        name: 'Kasun Jayawardena',
-        email: 'kasun@example.com',
-        subject: 'Question about shipping to Galle',
-        message: 'Hi, I wanted to know if you deliver to Galle district and what are the shipping charges? Also, how long does it usually take for delivery to Galle?',
-        status: 'unread',
-        createdAt: new Date()
+    this.loading = true;
+    this.contactService.getMessages({
+      status: this.currentFilter === 'all' ? undefined : this.currentFilter
+    }).subscribe({
+      next: (res) => {
+        this.messages = res.data;
+        this.counts = res.counts;
+        this.loading = false;
       },
-      {
-        _id: '2',
-        name: 'Dilani Fernando',
-        email: 'dilani@example.com',
-        subject: 'Bulk order inquiry',
-        message: 'We are interested in placing a bulk order for our office. Do you offer any discounts for bulk purchases? We need about 20 wireless headphones.',
-        status: 'read',
-        createdAt: new Date(Date.now() - 3600000)
-      },
-      {
-        _id: '3',
-        name: 'Ruwan Silva',
-        email: 'ruwan@example.com',
-        subject: 'Product return',
-        message: 'I received a damaged product (Order #10231). How can I return it and get a replacement? Please advise on the return process.',
-        status: 'replied',
-        createdAt: new Date(Date.now() - 86400000)
+      error: (err) => {
+        console.error('Error loading messages:', err);
+        this.loading = false;
       }
-    ];
-    this.filterMessages();
+    });
   }
 
-  setFilter(filter: 'all' | 'unread' | 'read' | 'replied') {
+  setFilter(filter: string) {
     this.currentFilter = filter;
-    this.filterMessages();
+    this.loadMessages();
   }
 
-  filterMessages() {
-    if (this.currentFilter === 'all') {
-      this.filteredMessages = [...this.messages];
-    } else {
-      this.filteredMessages = this.messages.filter(m => m.status === this.currentFilter);
-    }
-  }
-
-  toggleMessage(message: Message) {
+  toggleMessage(message: ContactMessage) {
     if (this.expandedMessages.has(message._id)) {
       this.expandedMessages.delete(message._id);
     } else {
       this.expandedMessages.add(message._id);
       if (message.status === 'unread') {
-        message.status = 'read';
-        this.filterMessages();
+        this.markAsRead(message);
       }
     }
   }
 
-  markAsRead(message: Message, event: Event) {
-    event.stopPropagation();
-    message.status = 'read';
-    this.filterMessages();
-    // In real app, make API call
+  markAsRead(message: ContactMessage, event?: Event) {
+    event?.stopPropagation();
+    this.contactService.updateMessageStatus(message._id, 'read').subscribe({
+      next: (updated) => {
+        message.status = updated.status;
+        this.loadMessages();
+      },
+      error: (err) => console.error('Error updating message:', err)
+    });
   }
 
-  markAsReplied(message: Message, event: Event) {
-    event.stopPropagation();
-    message.status = 'replied';
-    this.filterMessages();
-    // In real app, make API call
+  markAsReplied(message: ContactMessage, event?: Event) {
+    event?.stopPropagation();
+    this.contactService.updateMessageStatus(message._id, 'replied').subscribe({
+      next: (updated) => {
+        message.status = updated.status;
+        this.loadMessages();
+      },
+      error: (err) => console.error('Error updating message:', err)
+    });
   }
 
-  deleteMessage(message: Message, event: Event) {
+  deleteMessage(message: ContactMessage, event: Event) {
     event.stopPropagation();
     if (confirm('Are you sure you want to delete this message?')) {
-      const index = this.messages.indexOf(message);
-      if (index > -1) {
-        this.messages.splice(index, 1);
-        this.filterMessages();
+      this.contactService.deleteMessage(message._id).subscribe({
+        next: () => this.loadMessages(),
+        error: (err) => console.error('Error deleting message:', err)
+      });
+    }
+  }
+
+  sendReply(message: ContactMessage) {
+    if (!this.replyText.trim()) return;
+    this.replySending = true;
+    this.contactService.replyToMessage(message._id, this.replyText.trim()).subscribe({
+      next: () => {
+        this.replyText = '';
+        this.replySending = false;
+        this.expandedMessages.delete(message._id);
+        this.loadMessages();
+      },
+      error: (err) => {
+        console.error('Error sending reply:', err);
+        this.replySending = false;
       }
-      // In real app, make API call
-    }
-  }
-
-  sendReply(message: Message) {
-    if (this.replyText.trim()) {
-      console.log('Sending reply to:', message.email);
-      console.log('Reply text:', this.replyText);
-      message.status = 'replied';
-      this.replyText = '';
-      this.expandedMessages.delete(message._id);
-      this.filterMessages();
-      // In real app, send email via API
-    }
-  }
-
-  getTotalCount(): number {
-    return this.messages.length;
-  }
-
-  getUnreadCount(): number {
-    return this.messages.filter(m => m.status === 'unread').length;
-  }
-
-  getReadCount(): number {
-    return this.messages.filter(m => m.status === 'read').length;
-  }
-
-  getRepliedCount(): number {
-    return this.messages.filter(m => m.status === 'replied').length;
+    });
   }
 }

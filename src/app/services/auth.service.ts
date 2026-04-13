@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
 import { tap, catchError, map } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 export interface AdminUser {
   _id: string;
@@ -18,6 +19,7 @@ export interface LoginCredentials {
 }
 
 export interface AuthResponse {
+  success: boolean;
   token: string;
   user: AdminUser;
 }
@@ -28,13 +30,11 @@ export interface AuthResponse {
 export class AuthService {
   private readonly TOKEN_KEY = 'admin_token';
   private readonly USER_KEY = 'admin_user';
-  private readonly API_URL = 'http://localhost:3000/api'; // Update with your backend URL
-  
-  // Signals for reactive state
+  private readonly API_URL = environment.apiUrl;
+
   private currentUser = signal<AdminUser | null>(null);
   private token = signal<string | null>(null);
-  
-  // Computed values
+
   isAuthenticated = computed(() => !!this.token());
   user = computed(() => this.currentUser());
 
@@ -42,14 +42,12 @@ export class AuthService {
     private http: HttpClient,
     private router: Router
   ) {
-    // Load saved auth state on initialization
     this.loadAuthState();
-    
-    // Save auth state whenever it changes
+
     effect(() => {
       const token = this.token();
       const user = this.currentUser();
-      
+
       if (token && user) {
         if (typeof window !== 'undefined') {
           localStorage.setItem(this.TOKEN_KEY, token);
@@ -65,26 +63,14 @@ export class AuthService {
   }
 
   login(credentials: LoginCredentials): Observable<AuthResponse> {
-    // For demo purposes, simulate API call
-    // Replace with actual HTTP call: return this.http.post<AuthResponse>(`${this.API_URL}/auth/admin/login`, credentials)
-    
-    return of({
-      token: 'demo-jwt-token-' + Date.now(),
-      user: {
-        _id: '507f1f77bcf86cd799439011',
-        email: credentials.email,
-        name: 'Admin User',
-        role: 'admin' as const,
-        createdAt: new Date()
-      }
-    }).pipe(
+    return this.http.post<AuthResponse>(`${this.API_URL}/auth/admin/login`, credentials).pipe(
       tap(response => {
         this.token.set(response.token);
         this.currentUser.set(response.user);
       }),
       catchError(error => {
-        console.error('Login error:', error);
-        return throwError(() => new Error('Invalid credentials'));
+        const message = error.error?.error || 'Invalid credentials';
+        return throwError(() => new Error(message));
       })
     );
   }
@@ -95,22 +81,21 @@ export class AuthService {
     this.router.navigate(['/admin/login']);
   }
 
-  // Check if token is valid (for route guards)
   validateToken(): Observable<boolean> {
     const token = this.token();
     if (!token) {
       return of(false);
     }
-    
-    // In real app, validate token with backend
-    // return this.http.get<{valid: boolean}>(`${this.API_URL}/auth/validate`)
-    //   .pipe(map(response => response.valid));
-    
-    // For demo, just check if token exists
-    return of(true);
+
+    return this.http.get<{ success: boolean; valid: boolean }>(`${this.API_URL}/auth/validate`).pipe(
+      map(response => response.valid),
+      catchError(() => {
+        this.logout();
+        return of(false);
+      })
+    );
   }
 
-  // Get auth header for API requests
   getAuthHeader(): { [key: string]: string } {
     const token = this.token();
     return token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -120,7 +105,7 @@ export class AuthService {
     if (typeof window !== 'undefined') {
       const savedToken = localStorage.getItem(this.TOKEN_KEY);
       const savedUser = localStorage.getItem(this.USER_KEY);
-      
+
       if (savedToken && savedUser) {
         try {
           const user = JSON.parse(savedUser);

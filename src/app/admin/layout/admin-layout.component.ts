@@ -1,7 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from './../../services/auth.service';
+import { OrderService } from './../../services/order.service';
+import { ContactService } from './../../services/contact.service';
 
 @Component({
   selector: 'app-admin-layout',
@@ -43,39 +45,39 @@ import { AuthService } from './../../services/auth.service';
           
           <a routerLink="/admin/orders" 
              routerLinkActive="bg-gray-800 text-white"
-             class="flex items-center px-4 py-3 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white mb-2">
-            <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-            </svg>
-            Orders
-          </a>
-          
-          <a routerLink="/admin/customers" 
-             routerLinkActive="bg-gray-800 text-white"
-             class="flex items-center px-4 py-3 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white mb-2">
-            <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-            </svg>
-            Customers
+             class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white mb-2">
+            <span class="flex items-center">
+              <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+              </svg>
+              Orders
+            </span>
+            <span *ngIf="pendingOrders > 0" class="bg-amber-500 text-white text-xs font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1.5">
+              {{ pendingOrders }}
+            </span>
           </a>
           
           <a routerLink="/admin/messages" 
              routerLinkActive="bg-gray-800 text-white"
-             class="flex items-center px-4 py-3 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white mb-2">
-            <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-            </svg>
-            Messages
+             class="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white mb-2">
+            <span class="flex items-center">
+              <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+              </svg>
+              Messages
+            </span>
+            <span *ngIf="unreadMessages > 0" class="bg-blue-500 text-white text-xs font-bold rounded-full h-5 min-w-[20px] flex items-center justify-center px-1.5">
+              {{ unreadMessages }}
+            </span>
           </a>
           
-          <a routerLink="/admin/settings" 
-             routerLinkActive="bg-gray-800 text-white"
+          <!-- Store Link -->
+          <a routerLink="/" 
              class="flex items-center px-4 py-3 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white mb-2">
             <svg class="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
             </svg>
-            Settings
+            View Store
           </a>
         </nav>
         
@@ -139,10 +141,36 @@ import { AuthService } from './../../services/auth.service';
          class="fixed inset-0 bg-gray-600 bg-opacity-50 z-40 lg:hidden"></div>
   `
 })
-export class AdminLayoutComponent {
+export class AdminLayoutComponent implements OnInit, OnDestroy {
   sidebarOpen = true;
+  pendingOrders = 0;
+  unreadMessages = 0;
+  private pollInterval: any;
 
-  constructor(public authService: AuthService) {}
+  constructor(
+    public authService: AuthService,
+    private orderService: OrderService,
+    private contactService: ContactService
+  ) {}
+
+  ngOnInit() {
+    this.loadCounts();
+    this.pollInterval = setInterval(() => this.loadCounts(), 30000);
+  }
+
+  ngOnDestroy() {
+    if (this.pollInterval) clearInterval(this.pollInterval);
+  }
+
+  loadCounts() {
+    this.orderService.getDashboardStats().subscribe({
+      next: (data) => {
+        this.pendingOrders = data.pendingOrders || 0;
+        this.unreadMessages = data.unreadMessages || 0;
+      },
+      error: () => {}
+    });
+  }
 
   toggleSidebar() {
     this.sidebarOpen = !this.sidebarOpen;

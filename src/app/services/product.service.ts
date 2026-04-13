@@ -1,113 +1,82 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Product } from '../shared/models/product.model';
+import { environment } from '../../environments/environment';
+
+export interface ProductListResponse {
+  success: boolean;
+  count: number;
+  total: number;
+  page: number;
+  pages: number;
+  data: Product[];
+}
+
+export interface ProductResponse {
+  success: boolean;
+  data: Product;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProductService {
-  private apiUrl = 'http://localhost:3000/api/products'; // Your backend URL
+  private apiUrl = `${environment.apiUrl}/products`;
 
   constructor(private http: HttpClient) {}
 
-  // Get all products
-  getProducts(): Observable<Product[]> {
-    // For now, return mock data
-    // Replace with: return this.http.get<Product[]>(this.apiUrl);
-    
-    const mockProducts: Product[] = Array.from({ length: 12 }, (_, i) => ({
-      id: `prod-${i + 1}`,
-      name: this.getProductName(i),
-      price: this.getProductPrice(i),
-      description: 'High quality product with excellent features. Perfect for your needs.',
-      images: [`https://via.placeholder.com/300x300?text=Product+${i + 1}`],
-      inventory: Math.floor(Math.random() * 50) + 10,
-      categories: this.getProductCategories(i)
-    }));
-    
-    return of(mockProducts);
+  getProducts(options?: {
+    search?: string;
+    category?: string;
+    featured?: boolean;
+    sort?: string;
+    page?: number;
+    limit?: number;
+  }): Observable<ProductListResponse> {
+    let params = new HttpParams();
+    if (options?.search) params = params.set('search', options.search);
+    if (options?.category) params = params.set('category', options.category);
+    if (options?.featured) params = params.set('featured', 'true');
+    if (options?.sort) params = params.set('sort', options.sort);
+    if (options?.page) params = params.set('page', options.page.toString());
+    if (options?.limit) params = params.set('limit', options.limit.toString());
+
+    return this.http.get<ProductListResponse>(this.apiUrl, { params });
   }
 
-  // Get single product
-  getProduct(id: string): Observable<Product | undefined> {
-    // Replace with: return this.http.get<Product>(`${this.apiUrl}/${id}`);
-    return this.getProducts().pipe(
-      map(products => products.find(p => p.id === id))
+  getFeaturedProducts(): Observable<Product[]> {
+    return this.getProducts({ featured: true, limit: 4 }).pipe(
+      map(res => res.data)
     );
   }
 
-  // Create product (admin)
-  createProduct(product: Product): Observable<Product> {
-    // return this.http.post<Product>(this.apiUrl, product);
-    return of({ ...product, id: 'new-' + Date.now() });
+  getProduct(id: string): Observable<Product> {
+    return this.http.get<ProductResponse>(`${this.apiUrl}/${id}`).pipe(
+      map(res => res.data)
+    );
   }
 
-  // Update product (admin)
-  updateProduct(id: string, product: Product): Observable<Product> {
-    // return this.http.put<Product>(`${this.apiUrl}/${id}`, product);
-    return of(product);
+  getAdminProducts(): Observable<Product[]> {
+    return this.http.get<{ success: boolean; count: number; data: Product[] }>(
+      `${this.apiUrl}/admin/all`
+    ).pipe(map(res => res.data));
   }
 
-  // Delete product (admin)
+  createProduct(product: Partial<Product>): Observable<Product> {
+    return this.http.post<ProductResponse>(this.apiUrl, product).pipe(
+      map(res => res.data)
+    );
+  }
+
+  updateProduct(id: string, product: Partial<Product>): Observable<Product> {
+    return this.http.put<ProductResponse>(`${this.apiUrl}/${id}`, product).pipe(
+      map(res => res.data)
+    );
+  }
+
   deleteProduct(id: string): Observable<void> {
-    // return this.http.delete<void>(`${this.apiUrl}/${id}`);
-    return of(undefined);
-  }
-
-  // Search products
-  searchProducts(query: string): Observable<Product[]> {
-    // return this.http.get<Product[]>(`${this.apiUrl}/search?q=${query}`);
-    return this.getProducts().pipe(
-      map(products => products.filter(p => 
-        p.name.toLowerCase().includes(query.toLowerCase()) ||
-        p.description.toLowerCase().includes(query.toLowerCase())
-      ))
-    );
-  }
-
-  // Helper methods for mock data
-  private getProductName(index: number): string {
-    const names = [
-      'Premium Wireless Headphones',
-      'Smart Watch Pro',
-      'Portable Speaker',
-      'Laptop Stand',
-      'USB-C Hub',
-      'Wireless Mouse',
-      'Mechanical Keyboard',
-      'Phone Case',
-      'Power Bank',
-      'Cable Organizer',
-      'Desk Lamp',
-      'Webcam HD'
-    ];
-    return names[index % names.length];
-  }
-
-  private getProductPrice(index: number): number {
-    const prices = [8999, 24999, 5999, 3999, 4599, 2999, 12999, 1999, 6999, 999, 7999, 9999];
-    return prices[index % prices.length];
-  }
-
-  private getProductCategories(index: number): string[] {
-    const categories = [
-      ['electronics', 'audio'],
-      ['electronics', 'wearables'],
-      ['electronics', 'audio'],
-      ['accessories', 'office'],
-      ['electronics', 'accessories'],
-      ['electronics', 'accessories'],
-      ['electronics', 'office'],
-      ['accessories'],
-      ['electronics', 'accessories'],
-      ['accessories', 'office'],
-      ['electronics', 'office'],
-      ['electronics', 'office']
-    ];
-    return categories[index % categories.length];
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }
-
-// Add this import to the service file
-import { map } from 'rxjs/operators';

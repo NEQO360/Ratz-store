@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
+import { ContactService } from '../../services/contact.service';
 
 interface ContactForm {
   name: string;
@@ -27,6 +28,7 @@ export class ContactComponent {
 
   showSuccessMessage = false;
   isSubmitting = false;
+  errorMessage = '';
 
   contactInfo = [
     {
@@ -38,14 +40,14 @@ export class ContactComponent {
     {
       icon: 'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z',
       title: 'Phone',
-      details: '+94 11 234 5678',
+      details: '+94 77 757 9182',
       subtext: 'Mon-Fri 9AM-6PM IST'
     },
     {
       icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z',
-      title: 'Office',
-      details: '123 Galle Road',
-      subtext: 'Colombo 03, Sri Lanka'
+      title: 'Pickup Location',
+      details: '72/4, B Chakkindarama Road',
+      subtext: 'Ratmalana, Sri Lanka'
     }
   ];
 
@@ -70,7 +72,8 @@ export class ContactComponent {
 
   constructor(
     private meta: Meta,
-    private title: Title
+    private title: Title,
+    private contactService: ContactService
   ) {
     this.title.setTitle('Contact Us - Ratz Store');
     this.meta.addTags([
@@ -82,19 +85,23 @@ export class ContactComponent {
   onSubmit() {
     if (this.isFormValid()) {
       this.isSubmitting = true;
-      
-      // Simulate API call
-      setTimeout(() => {
-        console.log('Form submitted:', this.contactForm);
-        this.showSuccessMessage = true;
-        this.isSubmitting = false;
-        this.resetForm();
-        
-        // Hide success message after 5 seconds
-        setTimeout(() => {
-          this.showSuccessMessage = false;
-        }, 5000);
-      }, 1500);
+      this.errorMessage = '';
+
+      this.contactService.submitContact(this.contactForm).subscribe({
+        next: () => {
+          this.showSuccessMessage = true;
+          this.isSubmitting = false;
+          this.resetForm();
+
+          setTimeout(() => {
+            this.showSuccessMessage = false;
+          }, 5000);
+        },
+        error: (err) => {
+          this.errorMessage = err.error?.error || 'Something went wrong. Please try again.';
+          this.isSubmitting = false;
+        }
+      });
     }
   }
 

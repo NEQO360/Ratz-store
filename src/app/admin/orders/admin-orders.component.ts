@@ -2,34 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-
-interface Order {
-  _id: string;
-  orderNumber: string;
-  customer: {
-    name: string;
-    email: string;
-    phone: string;
-  };
-  items: Array<{
-    product: {
-      _id: string;
-      name: string;
-      price: number;
-    };
-    quantity: number;
-  }>;
-  total: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  shippingAddress: {
-    street: string;
-    city: string;
-    postalCode: string;
-  };
-  paymentMethod: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { OrderService, Order } from '../../services/order.service';
 
 @Component({
   selector: 'app-admin-orders',
@@ -47,15 +20,16 @@ interface Order {
         <div>
           <input type="text" 
                  [(ngModel)]="searchQuery"
-                 (ngModelChange)="filterOrders()"
+                 (ngModelChange)="loadOrders()"
                  placeholder="Search by order # or customer..."
                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border">
         </div>
         <div>
           <select [(ngModel)]="filterStatus"
-                  (ngModelChange)="filterOrders()"
+                  (ngModelChange)="loadOrders()"
                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border">
             <option value="">All Status</option>
+            <option value="awaiting_payment">Awaiting Payment</option>
             <option value="pending">Pending</option>
             <option value="processing">Processing</option>
             <option value="shipped">Shipped</option>
@@ -66,44 +40,37 @@ interface Order {
         <div>
           <input type="date" 
                  [(ngModel)]="filterDateFrom"
-                 (ngModelChange)="filterOrders()"
+                 (ngModelChange)="loadOrders()"
                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border">
         </div>
         <div>
           <input type="date" 
                  [(ngModel)]="filterDateTo"
-                 (ngModelChange)="filterOrders()"
+                 (ngModelChange)="loadOrders()"
                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm px-4 py-2 border">
         </div>
       </div>
 
+      <!-- Loading -->
+      <div *ngIf="loading" class="text-center py-12">
+        <p class="text-gray-500">Loading orders...</p>
+      </div>
+
       <!-- Orders Table -->
-      <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+      <div *ngIf="!loading" class="bg-white shadow overflow-hidden sm:rounded-lg">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Order
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Customer
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th class="relative px-6 py-3">
-                <span class="sr-only">Actions</span>
-              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr *ngFor="let order of filteredOrders">
+            <tr *ngFor="let order of orders">
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm font-medium text-gray-900">#{{ order.orderNumber }}</div>
                 <div class="text-sm text-gray-500">{{ order.items.length }} items</div>
@@ -120,9 +87,10 @@ interface Order {
                 <div class="text-sm text-gray-900">{{ order.total | currency:'LKR':'symbol':'1.0-0' }}</div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <select [(ngModel)]="order.status"
-                        (ngModelChange)="updateOrderStatus(order)"
+                <select [ngModel]="order.status"
+                        (ngModelChange)="updateOrderStatus(order, $event)"
                         [ngClass]="{
+                          'bg-orange-100 text-orange-800': order.status === 'awaiting_payment',
                           'bg-yellow-100 text-yellow-800': order.status === 'pending',
                           'bg-blue-100 text-blue-800': order.status === 'processing',
                           'bg-purple-100 text-purple-800': order.status === 'shipped',
@@ -130,6 +98,7 @@ interface Order {
                           'bg-red-100 text-red-800': order.status === 'cancelled'
                         }"
                         class="px-2 py-1 text-xs font-medium rounded-full border-0 focus:ring-2 focus:ring-offset-0">
+                  <option value="awaiting_payment">Awaiting Payment</option>
                   <option value="pending">Pending</option>
                   <option value="processing">Processing</option>
                   <option value="shipped">Shipped</option>
@@ -146,7 +115,7 @@ interface Order {
         </table>
         
         <!-- Empty State -->
-        <div *ngIf="filteredOrders.length === 0" class="text-center py-12">
+        <div *ngIf="orders.length === 0" class="text-center py-12">
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
           </svg>
@@ -156,31 +125,22 @@ interface Order {
       </div>
 
       <!-- Pagination -->
-      <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-        <div class="flex-1 flex justify-between sm:hidden">
-          <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-            Previous
-          </button>
-          <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-            Next
-          </button>
-        </div>
+      <div *ngIf="!loading && totalPages > 1" class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 mt-0">
         <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
           <div>
             <p class="text-sm text-gray-700">
-              Showing <span class="font-medium">1</span> to <span class="font-medium">{{ filteredOrders.length }}</span> of
-              <span class="font-medium">{{ orders.length }}</span> results
+              Showing page <span class="font-medium">{{ currentPage }}</span> of
+              <span class="font-medium">{{ totalPages }}</span>
             </p>
           </div>
           <div>
             <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-              <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+              <button (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1"
+                      class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50">
                 Previous
               </button>
-              <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                1
-              </button>
-              <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+              <button (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages"
+                      class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50">
                 Next
               </button>
             </nav>
@@ -192,104 +152,54 @@ interface Order {
 })
 export class AdminOrdersComponent implements OnInit {
   orders: Order[] = [];
-  filteredOrders: Order[] = [];
+  loading = true;
   searchQuery = '';
   filterStatus = '';
   filterDateFrom = '';
   filterDateTo = '';
+  currentPage = 1;
+  totalPages = 1;
+
+  constructor(private orderService: OrderService) {}
 
   ngOnInit() {
     this.loadOrders();
   }
 
   loadOrders() {
-    // Mock data - replace with API call
-    this.orders = [
-      {
-        _id: '1',
-        orderNumber: '10234',
-        customer: {
-          name: 'Amal Perera',
-          email: 'amal@example.com',
-          phone: '+94 77 123 4567'
-        },
-        items: [
-          {
-            product: { _id: '1', name: 'Premium Wireless Headphones', price: 8999 },
-            quantity: 1
-          },
-          {
-            product: { _id: '2', name: 'Laptop Stand', price: 3999 },
-            quantity: 2
-          }
-        ],
-        total: 16997,
-        status: 'pending',
-        shippingAddress: {
-          street: '123 Galle Road',
-          city: 'Colombo',
-          postalCode: '00300'
-        },
-        paymentMethod: 'Credit Card',
-        createdAt: new Date(),
-        updatedAt: new Date()
+    this.loading = true;
+    this.orderService.getOrders({
+      search: this.searchQuery || undefined,
+      status: this.filterStatus || undefined,
+      dateFrom: this.filterDateFrom || undefined,
+      dateTo: this.filterDateTo || undefined,
+      page: this.currentPage
+    }).subscribe({
+      next: (res) => {
+        this.orders = res.data;
+        this.totalPages = res.pages;
+        this.loading = false;
       },
-      {
-        _id: '2',
-        orderNumber: '10233',
-        customer: {
-          name: 'Nimal Silva',
-          email: 'nimal@example.com',
-          phone: '+94 71 234 5678'
-        },
-        items: [
-          {
-            product: { _id: '3', name: 'Smart Watch Pro', price: 24999 },
-            quantity: 1
-          }
-        ],
-        total: 24999,
-        status: 'processing',
-        shippingAddress: {
-          street: '456 Main Street',
-          city: 'Kandy',
-          postalCode: '20000'
-        },
-        paymentMethod: 'Cash on Delivery',
-        createdAt: new Date(Date.now() - 86400000),
-        updatedAt: new Date()
+      error: (err) => {
+        console.error('Error loading orders:', err);
+        this.loading = false;
       }
-    ];
-    this.filteredOrders = [...this.orders];
-  }
-
-  filterOrders() {
-    this.filteredOrders = this.orders.filter(order => {
-      const matchesSearch = !this.searchQuery || 
-        order.orderNumber.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-        order.customer.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-        order.customer.email.toLowerCase().includes(this.searchQuery.toLowerCase());
-      
-      const matchesStatus = !this.filterStatus || order.status === this.filterStatus;
-      
-      let matchesDate = true;
-      if (this.filterDateFrom || this.filterDateTo) {
-        const orderDate = new Date(order.createdAt);
-        if (this.filterDateFrom) {
-          matchesDate = matchesDate && orderDate >= new Date(this.filterDateFrom);
-        }
-        if (this.filterDateTo) {
-          matchesDate = matchesDate && orderDate <= new Date(this.filterDateTo);
-        }
-      }
-      
-      return matchesSearch && matchesStatus && matchesDate;
     });
   }
 
-  updateOrderStatus(order: Order) {
-    console.log('Updating order status:', order._id, order.status);
-    // In real app, make API call to update status
-    // this.orderService.updateStatus(order._id, order.status).subscribe();
+  updateOrderStatus(order: Order, newStatus: string) {
+    this.orderService.updateOrderStatus(order._id, newStatus).subscribe({
+      next: (updated) => {
+        order.status = updated.status;
+      },
+      error: (err) => console.error('Error updating order status:', err)
+    });
+  }
+
+  goToPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.loadOrders();
+    }
   }
 }
