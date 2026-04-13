@@ -33,7 +33,7 @@ export const adminRoutes: Routes = [
       },
       {
         path: 'orders/:id',
-        loadComponent: () => import('./orders/admin-orders.component').then(m => m.AdminOrdersComponent)
+        loadComponent: () => import('./orders/admin-order-detail.component').then(m => m.AdminOrderDetailComponent)
       },
     //   {
     //     path: 'customers',
